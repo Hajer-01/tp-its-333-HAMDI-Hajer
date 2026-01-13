@@ -1,0 +1,5 @@
+{
+    "Alice": {"taille": 165, "poids": 60, "tension": "120/80", "poids_ideal": 62},
+    "Bob": {"taille": 175, "poids": 75, "tension": "130/85", "poids_ideal": 70},
+    "Hajer": {"taille": 160, "poids": 55, "tension": "110/70", "poids_ideal": 55}
+}

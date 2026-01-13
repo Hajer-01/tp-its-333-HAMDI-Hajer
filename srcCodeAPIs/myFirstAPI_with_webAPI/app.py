@@ -2,17 +2,19 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-## EXO1: API GET: renvoyer un helloworld - API end point name: "api/salutation"
+# EXO 1 : API GET
 @app.route("/api/salutation", methods=["GET"])
 def salutation():
     return jsonify(message="Hello World")
-## EXO2: API POST: renvoyer un nom fourni en parametre - API end point name: "api/utilisateurs"
 
-# to be tested with curl
+# EXO 2 : API POST
+@app.route("/api/utilisateurs", methods=["POST"])
+def utilisateurs():
+    data = request.get_json()      # récupérer le JSON envoyé
+    nom = data.get("nom")          # récupérer le champ "nom"
 
-# Commandes bash (attention, à adapter pour powershell)
-# >> curl -i -X GET http://localhost:5000/api/salutation
-# >> curl -i -X POST -H 'Content-Type: application/json' -d '{"nom": "Bob"}' http://localhost:5000/api/utilisateurs
+    return jsonify(message=f"Bonjour {nom}")
 
 if __name__ == '__main__':
     app.run(debug=True)
+

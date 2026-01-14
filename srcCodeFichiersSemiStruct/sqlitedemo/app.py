@@ -1,68 +1,73 @@
-from flask import Flask, render_template, request, redirect, url_for
-import sqlite3
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# =======================
-# Initialisation BD
-# =======================
-def init_db():
-    conn = sqlite3.connect("database.db")
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS etudiants (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nom TEXT NOT NULL,
-            adresse TEXT NOT NULL,
-            pin TEXT NOT NULL
-        )
-    """)
-    conn.close()
+# ==========================
+# Configuration SQLite
+# ==========================
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# =======================
-# Connexion BD
-# =======================
-def get_db_connection():
-    conn = sqlite3.connect("database.db")
-    conn.row_factory = sqlite3.Row
-    return conn
+db = SQLAlchemy(app)
 
-# =======================
-# Routes
-# =======================
+# ==========================
+# MODELS
+# ==========================
 
-# Afficher la liste des étudiants
+class Groupe(db.Model):
+    __tablename__ = "groupe"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(50), nullable=False)
+
+    # Relation 1 -> N
+    etudiants = db.relationship("Etudiant", backref="groupe", lazy=True)
+
+    def __repr__(self):
+        return f"<Groupe {self.nom}>"
+
+class Etudiant(db.Model):
+    __tablename__ = "etudiant"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(80), nullable=False)
+    adresse = db.Column(db.String(120), nullable=False)
+    pin = db.Column(db.String(20), nullable=False)
+
+    # Clé étrangère
+    group_id = db.Column(db.Integer, db.ForeignKey("groupe.id"))
+
+    def __repr__(self):
+        return f"<Etudiant {self.nom}>"
+
+# ==========================
+# INITIALISATION & DONNÉES
+# ==========================
 @app.route("/")
-def list_students():
-    conn = get_db_connection()
-    etudiants = conn.execute("SELECT * FROM etudiants").fetchall()
-    conn.close()
-    return render_template("list.html", etudiants=etudiants)
+def init_data():
+    db.drop_all()
+    db.create_all()
 
-# Ajouter un étudiant
-@app.route("/new", methods=["GET", "POST"])
-def new_student():
-    if request.method == "POST":
-        nom = request.form["nom"]
-        adresse = request.form["adresse"]
-        pin = request.form["pin"]
+    # Création du groupe ITS2
+    its2 = Groupe(nom="ITS2")
+    db.session.add(its2)
+    db.session.commit()
 
-        conn = get_db_connection()
-        conn.execute(
-            "INSERT INTO etudiants (nom, adresse, pin) VALUES (?, ?, ?)",
-            (nom, adresse, pin)
-        )
-        conn.commit()
-        conn.close()
+    # Création de 3 étudiants
+    e1 = Etudiant(nom="Alice", adresse="Paris", pin="75000", groupe=its2)
+    e2 = Etudiant(nom="Bob", adresse="Créteil", pin="94000", groupe=its2)
+    e3 = Etudiant(nom="Charlie", adresse="Evry", pin="91000", groupe=its2)
 
-        return redirect(url_for("list_students"))
+    db.session.add_all([e1, e2, e3])
+    db.session.commit()
 
-    return render_template("new.html")
+    return "Groupe ITS2 et 3 étudiants créés avec succès ✅"
 
-# =======================
-# Lancement app
-# =======================
+# ==========================
+# LANCEMENT
+# ==========================
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
 
 
